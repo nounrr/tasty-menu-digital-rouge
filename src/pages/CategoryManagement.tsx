@@ -12,7 +12,7 @@ import { categories as initialCategories, restaurants, Category } from '../data/
 const CategoryManagement = () => {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [newCategory, setNewCategory] = useState("");
-  const [newCategoryImage, setNewCategoryImage] = useState("placeholder.svg");
+  const [newCategoryImage, setNewCategoryImage] = useState("");
   const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editImage, setEditImage] = useState("");
@@ -40,11 +40,11 @@ const CategoryManagement = () => {
         id: newId, 
         name: newCategory.trim(), 
         restaurantId: selectedRestaurantId,
-        image: newCategoryImage
+        image: newCategoryImage || undefined
       }
     ]);
     setNewCategory("");
-    setNewCategoryImage("placeholder.svg");
+    setNewCategoryImage("");
     
     toast({
       title: "Catégorie ajoutée",
@@ -76,7 +76,7 @@ const CategoryManagement = () => {
 
     setCategories(
       categories.map(cat =>
-        cat.id === editCategoryId ? { ...cat, name: editName, image: editImage } : cat
+        cat.id === editCategoryId ? { ...cat, name: editName, image: editImage || undefined } : cat
       )
     );
 
@@ -154,23 +154,28 @@ const CategoryManagement = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image (lien URL)</label>
               <div className="flex gap-2 items-center">
                 <Input
                   placeholder="URL de l'image"
                   value={newCategoryImage}
                   onChange={(e) => setNewCategoryImage(e.target.value)}
                 />
-                <Button variant="outline" size="icon">
-                  <Image className="h-4 w-4" />
-                </Button>
               </div>
               {newCategoryImage && (
-                <div className="mt-2 w-16 h-16 rounded overflow-hidden border">
+                <div className="mt-2 w-16 h-16 rounded overflow-hidden border bg-gray-100">
                   <img 
                     src={newCategoryImage} 
                     alt="Aperçu"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'placeholder.svg';
+                      toast({
+                        title: "Erreur d'image",
+                        description: "L'URL de l'image n'est pas valide",
+                        variant: "destructive"
+                      });
+                    }}
                   />
                 </div>
               )}

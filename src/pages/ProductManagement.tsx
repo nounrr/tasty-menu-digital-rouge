@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { menuItems as initialMenuItems, categories, restaurants, MenuItem, getCategoriesByRestaurant } from '../data/menuData';
@@ -22,7 +21,7 @@ const ProductManagement = () => {
   const [newPrice, setNewPrice] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newCategoryId, setNewCategoryId] = useState("");
-  const [newImage, setNewImage] = useState("placeholder.svg");
+  const [newImage, setNewImage] = useState("");
   
   // Edit product form
   const [editTitle, setEditTitle] = useState("");
@@ -88,7 +87,7 @@ const ProductManagement = () => {
         description: newDescription.trim() || undefined,
         categoryId: Number(newCategoryId),
         restaurantId: selectedRestaurantId,
-        image: newImage
+        image: newImage || undefined
       }
     ]);
 
@@ -97,7 +96,7 @@ const ProductManagement = () => {
     setNewPrice("");
     setNewDescription("");
     setNewCategoryId("");
-    setNewImage("placeholder.svg");
+    setNewImage("");
     
     toast({
       title: "Produit ajouté",
@@ -152,7 +151,7 @@ const ProductManagement = () => {
               price: Number(editPrice),
               description: editDescription.trim() || undefined,
               categoryId: Number(editCategoryId),
-              image: editImage
+              image: editImage || undefined
             } 
           : item
       )
@@ -255,23 +254,28 @@ const ProductManagement = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image (lien URL)</label>
               <div className="flex gap-2 items-center">
                 <Input
                   placeholder="URL de l'image"
                   value={newImage}
                   onChange={(e) => setNewImage(e.target.value)}
                 />
-                <Button variant="outline" size="icon">
-                  <Image className="h-4 w-4" />
-                </Button>
               </div>
               {newImage && (
-                <div className="mt-2 w-16 h-16 rounded overflow-hidden border">
+                <div className="mt-2 w-16 h-16 rounded overflow-hidden border bg-gray-100">
                   <img 
                     src={newImage} 
                     alt="Aperçu"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'placeholder.svg';
+                      toast({
+                        title: "Erreur d'image",
+                        description: "L'URL de l'image n'est pas valide",
+                        variant: "destructive"
+                      });
+                    }}
                   />
                 </div>
               )}

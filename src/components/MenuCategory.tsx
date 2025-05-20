@@ -22,11 +22,14 @@ const MenuCategory: FC<MenuCategoryProps> = ({ category, isActive, onClick }) =>
       onClick={onClick}
     >
       {category.image && (
-        <div className="w-6 h-6 rounded-full overflow-hidden">
+        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-100">
           <img 
             src={category.image} 
             alt={category.name} 
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = 'placeholder.svg';
+            }}
           />
         </div>
       )}
