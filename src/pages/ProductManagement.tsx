@@ -1,31 +1,51 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Image } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { menuItems as initialMenuItems, categories, MenuItem } from '../data/menuData';
+import { menuItems as initialMenuItems, categories, restaurants, MenuItem, getCategoriesByRestaurant } from '../data/menuData';
 
 const ProductManagement = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
   const [editProductId, setEditProductId] = useState<number | null>(null);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState(restaurants[0]?.id || 0);
+  const [restaurantCategories, setRestaurantCategories] = useState(getCategoriesByRestaurant(selectedRestaurantId));
   
   // New product form
   const [newTitle, setNewTitle] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newCategoryId, setNewCategoryId] = useState("");
+  const [newImage, setNewImage] = useState("placeholder.svg");
   
   // Edit product form
   const [editTitle, setEditTitle] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
+  const [editImage, setEditImage] = useState("");
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    setRestaurantCategories(getCategoriesByRestaurant(selectedRestaurantId));
+    setNewCategoryId("");
+  }, [selectedRestaurantId]);
+
+  const filteredMenuItems = menuItems.filter(item => {
+    const itemCategory = categories.find(cat => cat.id === item.categoryId);
+    return itemCategory && itemCategory.restaurantId === selectedRestaurantId;
+  });
+
+  const handleChangeRestaurant = (value: string) => {
+    setSelectedRestaurantId(parseInt(value));
+  };
 
   const handleAddProduct = () => {
     // Validation
@@ -66,7 +86,9 @@ const ProductManagement = () => {
         title: newTitle.trim(),
         price: Number(newPrice),
         description: newDescription.trim() || undefined,
-        categoryId: Number(newCategoryId)
+        categoryId: Number(newCategoryId),
+        restaurantId: selectedRestaurantId,
+        image: newImage
       }
     ]);
 
@@ -75,6 +97,7 @@ const ProductManagement = () => {
     setNewPrice("");
     setNewDescription("");
     setNewCategoryId("");
+    setNewImage("placeholder.svg");
     
     toast({
       title: "Produit ajouté",
@@ -88,6 +111,7 @@ const ProductManagement = () => {
     setEditPrice(product.price.toString());
     setEditDescription(product.description || "");
     setEditCategoryId(product.categoryId.toString());
+    setEditImage(product.image || "placeholder.svg");
   };
 
   const cancelEdit = () => {
@@ -96,6 +120,7 @@ const ProductManagement = () => {
     setEditPrice("");
     setEditDescription("");
     setEditCategoryId("");
+    setEditImage("");
   };
 
   const saveEdit = () => {
@@ -126,7 +151,8 @@ const ProductManagement = () => {
               title: editTitle.trim(),
               price: Number(editPrice),
               description: editDescription.trim() || undefined,
-              categoryId: Number(editCategoryId)
+              categoryId: Number(editCategoryId),
+              image: editImage
             } 
           : item
       )
@@ -171,6 +197,23 @@ const ProductManagement = () => {
           </Button>
         </div>
         
+        <div className="mb-6">
+          <h2 className="text-lg font-medium text-restaurant-dark mb-3">Sélectionner un restaurant</h2>
+          <Tabs 
+            defaultValue={selectedRestaurantId.toString()} 
+            onValueChange={handleChangeRestaurant}
+            className="w-full"
+          >
+            <TabsList className="mb-4">
+              {restaurants.map(restaurant => (
+                <TabsTrigger key={restaurant.id} value={restaurant.id.toString()}>
+                  {restaurant.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        
         <Card className="p-6 shadow-md mb-6">
           <h2 className="text-xl font-bold text-restaurant-dark mb-4">Ajouter un produit</h2>
           <div className="space-y-4">
@@ -202,13 +245,36 @@ const ProductManagement = () => {
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
+                  {restaurantCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="URL de l'image"
+                  value={newImage}
+                  onChange={(e) => setNewImage(e.target.value)}
+                />
+                <Button variant="outline" size="icon">
+                  <Image className="h-4 w-4" />
+                </Button>
+              </div>
+              {newImage && (
+                <div className="mt-2 w-16 h-16 rounded overflow-hidden border">
+                  <img 
+                    src={newImage} 
+                    alt="Aperçu"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </div>
             
             <div>
@@ -232,11 +298,11 @@ const ProductManagement = () => {
         <Card className="p-6 shadow-md">
           <h2 className="text-xl font-bold text-restaurant-dark mb-4">Produits existants</h2>
           
-          {menuItems.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Aucun produit disponible</p>
+          {filteredMenuItems.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Aucun produit disponible pour ce restaurant</p>
           ) : (
             <div className="space-y-4">
-              {menuItems.map((product) => (
+              {filteredMenuItems.map((product) => (
                 <div 
                   key={product.id} 
                   className="border rounded-lg p-4 bg-white"
@@ -269,13 +335,36 @@ const ProductManagement = () => {
                             <SelectValue placeholder="Sélectionner une catégorie" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories.map((category) => (
+                            {restaurantCategories.map((category) => (
                               <SelectItem key={category.id} value={category.id.toString()}>
                                 {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            placeholder="URL de l'image"
+                            value={editImage}
+                            onChange={(e) => setEditImage(e.target.value)}
+                          />
+                          <Button variant="outline" size="icon">
+                            <Image className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {editImage && (
+                          <div className="mt-2 w-16 h-16 rounded overflow-hidden border">
+                            <img 
+                              src={editImage} 
+                              alt="Aperçu"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
                       </div>
                       
                       <div>
@@ -304,11 +393,22 @@ const ProductManagement = () => {
                   ) : (
                     <div>
                       <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-medium text-lg">{product.title}</h3>
-                          <p className="text-sm text-gray-500">
-                            Catégorie: {categories.find(c => c.id === product.categoryId)?.name}
-                          </p>
+                        <div className="flex gap-4">
+                          {product.image && (
+                            <div className="w-16 h-16 rounded overflow-hidden border flex-shrink-0">
+                              <img 
+                                src={product.image} 
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-medium text-lg">{product.title}</h3>
+                            <p className="text-sm text-gray-500">
+                              Catégorie: {categories.find(c => c.id === product.categoryId)?.name}
+                            </p>
+                          </div>
                         </div>
                         <div className="text-restaurant-red font-bold">
                           {product.price.toFixed(2)} €

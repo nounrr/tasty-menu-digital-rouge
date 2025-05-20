@@ -1,18 +1,37 @@
 
 import { useState, useEffect } from 'react';
-import { categories, getMenuItemsByCategory } from '../data/menuData';
+import { restaurants, categories, getCategoriesByRestaurant, getMenuItemsByCategory } from '../data/menuData';
 import CategoryList from '../components/CategoryList';
 import MenuItemList from '../components/MenuItemList';
+import RestaurantSelector from '../components/RestaurantSelector';
 import Navbar from '../components/Navbar';
 import Logo from '../components/Logo';
 
 const Index = () => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState(categories[0]?.id || 0);
+  const [selectedRestaurantId, setSelectedRestaurantId] = useState(restaurants[0]?.id || 0);
+  const [restaurantCategories, setRestaurantCategories] = useState(getCategoriesByRestaurant(selectedRestaurantId));
+  const [selectedCategoryId, setSelectedCategoryId] = useState(restaurantCategories[0]?.id || 0);
   const [menuItems, setMenuItems] = useState(getMenuItemsByCategory(selectedCategoryId));
+
+  useEffect(() => {
+    const filteredCategories = getCategoriesByRestaurant(selectedRestaurantId);
+    setRestaurantCategories(filteredCategories);
+    
+    // Set first category of the selected restaurant as the default
+    if (filteredCategories.length > 0) {
+      setSelectedCategoryId(filteredCategories[0].id);
+    } else {
+      setSelectedCategoryId(0);
+    }
+  }, [selectedRestaurantId]);
 
   useEffect(() => {
     setMenuItems(getMenuItemsByCategory(selectedCategoryId));
   }, [selectedCategoryId]);
+
+  const handleSelectRestaurant = (restaurantId: number) => {
+    setSelectedRestaurantId(restaurantId);
+  };
 
   const handleSelectCategory = (categoryId: number) => {
     setSelectedCategoryId(categoryId);
@@ -35,15 +54,21 @@ const Index = () => {
           </p>
         </div>
 
+        <RestaurantSelector 
+          restaurants={restaurants}
+          selectedRestaurantId={selectedRestaurantId}
+          onSelectRestaurant={handleSelectRestaurant}
+        />
+
         <CategoryList 
-          categories={categories} 
+          categories={restaurantCategories} 
           selectedCategoryId={selectedCategoryId} 
           onSelectCategory={handleSelectCategory} 
         />
 
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold text-restaurant-dark mb-6 border-b border-gray-200 pb-2">
-            {categories.find(cat => cat.id === selectedCategoryId)?.name}
+            {restaurantCategories.find(cat => cat.id === selectedCategoryId)?.name}
           </h2>
           <MenuItemList items={menuItems} categoryId={selectedCategoryId} />
         </div>
